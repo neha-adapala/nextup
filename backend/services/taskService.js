@@ -49,60 +49,60 @@ export async function getCombinedTaskList(userId, accessToken = null, refreshFro
             const taskName = taskData.text?.substring(0, 500) || latestEmail.subject;
 
             // Check if task already exists for this thread
-            const existingTask = dbTasks.find(t => 
-              t.source === 'email' && 
+              const existingTask = dbTasks.find(t => 
+                t.source === 'email' && 
               (t.sourceId === threadId || (t.sourceData?.threadId === threadId)) &&
-              t.name && taskName &&
-              (t.name.toLowerCase().includes(taskName.toLowerCase().substring(0, 50)) ||
-               taskName.toLowerCase().includes(t.name.toLowerCase().substring(0, 50)))
-            );
+                t.name && taskName &&
+                (t.name.toLowerCase().includes(taskName.toLowerCase().substring(0, 50)) ||
+                 taskName.toLowerCase().includes(t.name.toLowerCase().substring(0, 50)))
+              );
 
-            if (!existingTask) {
-              emailTasks.push({
+              if (!existingTask) {
+                emailTasks.push({
                 name: taskName,
-                importance: taskData.importance || 3,
+                  importance: taskData.importance || 3,
                 dueDate: emailDeadline,
-                source: 'email',
+                  source: 'email',
                 sourceId: threadId, // Use threadId as sourceId
-                sourceData: {
+                  sourceData: {
                   emailSubject: latestEmail.subject,
                   emailFrom: latestEmail.from,
                   emailDate: latestEmail.date,
                   threadId: threadId,
                   messageId: latestEmail.id,
                   threadEmailCount: threadEmails.length
-                }
-              });
-            }
+                  }
+                });
+              }
           } else if (emailDeadline) {
             // If no tasks found but there's a deadline, create a task from the deadline
             const taskName = `${latestEmail.subject} - Due ${new Date(emailDeadline).toLocaleDateString()}`;
-            const existingTask = dbTasks.find(t => 
-              t.source === 'email' && 
+              const existingTask = dbTasks.find(t => 
+                t.source === 'email' && 
               (t.sourceId === threadId || (t.sourceData?.threadId === threadId)) &&
-              t.dueDate &&
+                t.dueDate &&
               Math.abs(new Date(t.dueDate) - emailDeadline) < 24 * 60 * 60 * 1000 // Within 24 hours
-            );
+              );
 
-            if (!existingTask) {
-              emailTasks.push({
-                name: taskName,
+              if (!existingTask) {
+                emailTasks.push({
+                  name: taskName,
                 description: `Deadline from email: ${latestEmail.subject}`,
-                importance: 4, // Deadlines are important
+                  importance: 4, // Deadlines are important
                 dueDate: emailDeadline,
-                source: 'email',
+                  source: 'email',
                 sourceId: threadId,
-                sourceData: {
+                  sourceData: {
                   emailSubject: latestEmail.subject,
                   emailFrom: latestEmail.from,
                   emailDate: latestEmail.date,
                   threadId: threadId,
                   messageId: latestEmail.id,
                   threadEmailCount: threadEmails.length,
-                  isDeadline: true
-                }
-              });
-            }
+                    isDeadline: true
+                  }
+                });
+              }
           }
         });
 

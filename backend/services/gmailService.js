@@ -1,4 +1,21 @@
 import fetch from 'node-fetch';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Load environment variables
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '..', '.env') });
+
+// Initialize Gemini API client
+let genAI = null;
+if (process.env.GEMINI_API_KEY) {
+  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+} else {
+  console.warn('⚠️ Gemini API key not found. Task extraction will use regex patterns only.');
+}
 
 /**
  * Fetches emails from Gmail API
@@ -8,9 +25,14 @@ import fetch from 'node-fetch';
  */
 export async function fetchEmails(accessToken, maxResults = 50) {
   try {
-    // First, get list of message IDs
+    // Calculate date 30 days ago
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const dateStr = thirtyDaysAgo.toISOString().split('T')[0].replace(/-/g, '/'); // Format: YYYY/MM/DD for Gmail API
+    
+    // First, get list of message IDs (only emails from past 30 days)
     const listResponse = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&q=is:unread OR has:attachment OR (subject:homework OR subject:assignment OR subject:deadline OR subject:due)`,
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&q=after:${dateStr} AND (is:unread OR has:attachment OR subject:homework OR subject:assignment OR subject:deadline OR subject:due)`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -63,6 +85,22 @@ export async function fetchEmails(accessToken, maxResults = 50) {
         }
 
         const messageData = await messageResponse.json();
+        
+        // Extract headers for filtering
+        const headers = messageData.payload.headers || [];
+        const getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+        const subject = getHeader('subject');
+        const from = getHeader('from');
+        
+        // Extract truncated body for quick relevance check
+        const truncatedBody = extractTruncatedBody(messageData, 800);
+        
+        // Filter email before parsing (saves API calls if not relevant)
+        const shouldProcess = await shouldProcessEmail(subject, from, truncatedBody);
+        if (!shouldProcess) {
+          return null; // Skip this email - not relevant for task extraction
+        }
+        
         return parseEmail(messageData);
       } catch (error) {
         console.error(`Error fetching message ${message.id}:`, error);
@@ -81,11 +119,112 @@ export async function fetchEmails(accessToken, maxResults = 50) {
 }
 
 /**
+ * Extracts truncated body text from email message data for quick filtering
+ * @param {Object} messageData - Raw message data from Gmail API
+ * @param {number} maxLength - Maximum length of body to extract (default: 800)
+ * @returns {string} Truncated email body text
+ */
+function extractTruncatedBody(messageData, maxLength = 800) {
+  let bodyText = '';
+  
+  if (messageData.payload.body?.data) {
+    bodyText = Buffer.from(messageData.payload.body.data, 'base64').toString('utf-8');
+  } else if (messageData.payload.parts) {
+    // Try to find text/plain or text/html part
+    const textPart = messageData.payload.parts.find(part => 
+      part.mimeType === 'text/plain' || part.mimeType === 'text/html'
+    );
+    if (textPart?.body?.data) {
+      bodyText = Buffer.from(textPart.body.data, 'base64').toString('utf-8');
+      // Remove HTML tags if HTML
+      if (textPart.mimeType === 'text/html') {
+        bodyText = bodyText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+    }
+  }
+  
+  // Truncate to maxLength
+  if (bodyText.length > maxLength) {
+    bodyText = bodyText.substring(0, maxLength) + '...';
+  }
+  
+  return bodyText.trim();
+}
+
+/**
+ * Determines if an email should be processed for task extraction using Gemini API
+ * @param {string} subject - Email subject
+ * @param {string} from - Email sender
+ * @param {string} bodyText - Email body text (truncated)
+ * @returns {Promise<boolean>} True if email should be processed, false otherwise
+ */
+async function shouldProcessEmail(subject, from, bodyText) {
+  // If Gemini API is not available, process all emails (safe fallback)
+  if (!genAI) {
+    return true;
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    
+    // Truncate further if needed for the prompt
+    const truncatedBody = bodyText.length > 800 ? bodyText.substring(0, 800) + '...' : bodyText;
+    
+    const prompt = `Analyze this email and determine if it contains actionable tasks that should be processed.
+
+Subject: ${subject}
+From: ${from}
+Body: ${truncatedBody}
+
+Does this email contain:
+- Assignments or homework
+- Application deadlines
+- Tasks that need to be completed
+- Important deadlines
+- Action items
+
+If spam, marketing, promotional, newsletters, or purely informational with no tasks, return {"relevant": false}
+If the email contains actionable tasks, assignments, deadlines, or items requiring action, return {"relevant": true}
+
+Return ONLY a JSON object: {"relevant": true/false}`;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+
+    console.log('Gemini API response:', text);
+    
+    // Extract JSON from response (might have markdown code blocks)
+    let jsonText = text.trim();
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/```\n?/g, '').trim();
+    }
+
+    const resultObj = JSON.parse(jsonText);
+    
+    // Validate response
+    if (typeof resultObj.relevant === 'boolean') {
+      return resultObj.relevant;
+    }
+    
+    // If response format is invalid, default to processing (safe fallback)
+    console.warn('Invalid response format from Gemini email filter, defaulting to process email');
+    return true;
+  } catch (error) {
+    // Log error but default to processing email (safe fallback)
+    console.error('Error using Gemini API for email filtering, defaulting to process email:', error.message);
+    return true;
+  }
+}
+
+/**
  * Parses a Gmail message to extract relevant information
  * @param {Object} messageData - Raw message data from Gmail API
- * @returns {Object} Parsed email object with task information
+ * @returns {Promise<Object>} Parsed email object with task information
  */
-function parseEmail(messageData) {
+async function parseEmail(messageData) {
   const headers = messageData.payload.headers || [];
   const getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
 
@@ -113,8 +252,8 @@ function parseEmail(messageData) {
     }
   }
 
-  // Extract tasks and deadlines
-  const tasks = extractTasks(subject, bodyText);
+  // Extract tasks and deadlines (tasks is now async)
+  const tasks = await extractTasks(subject, bodyText);
   const deadlines = extractDeadlines(subject, bodyText, date);
 
   return {
@@ -131,12 +270,113 @@ function parseEmail(messageData) {
 }
 
 /**
- * Extracts tasks from email subject and body
+ * Extracts tasks from email subject and body using Gemini API
+ * Falls back to regex patterns if Gemini API is unavailable
+ * @param {string} subject - Email subject
+ * @param {string} body - Email body text
+ * @returns {Promise<Array>} Array of task objects
+ */
+async function extractTasks(subject, body) {
+  // Try using Gemini API first if available
+  if (genAI) {
+    try {
+      return await extractTasksWithGemini(subject, body);
+    } catch (error) {
+      console.error('Error using Gemini API for task extraction, falling back to regex:', error.message);
+      // Fall through to regex extraction
+    }
+  }
+
+  // Fallback to regex-based extraction
+  return extractTasksWithRegex(subject, body);
+}
+
+/**
+ * Extracts tasks using Gemini API
+ * @param {string} subject - Email subject
+ * @param {string} body - Email body text
+ * @returns {Promise<Array>} Array of task objects
+ */
+async function extractTasksWithGemini(subject, body) {
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+  
+  // Truncate body if too long (Gemini has token limits)
+  const truncatedBody = body.length > 4000 ? body.substring(0, 4000) + '...' : body;
+  
+  const prompt = `Analyze the following email and extract tasks that need to be completed. 
+
+Email Subject: ${subject}
+
+Email Body: ${truncatedBody}
+
+Instructions:
+1. Identify all actionable tasks (assignments, applications, email replies, projects, etc.)
+2. For each task, create a clear, concise summary that describes what needs to be done
+3. Use action verbs like "Complete", "Submit", "Reply to", "Attend", "Prepare", etc.
+4. Keep each task summary under 150 characters
+5. Return ONLY a JSON array of task objects in this exact format:
+[
+  {"text": "Task summary here", "importance": 1-5},
+  ...
+]
+
+The importance should be 1 (low) to 5 (critical). Consider urgency, deadlines, and keywords like "urgent", "asap", "deadline", "due", "exam", "test", etc.
+
+If no tasks are found, return an empty array: []
+
+Return ONLY the JSON array, no other text.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+    
+    // Extract JSON from response (might have markdown code blocks)
+    let jsonText = text.trim();
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/```\n?/g, '').trim();
+    }
+
+    const tasks = JSON.parse(jsonText);
+    
+    // Validate and format tasks
+    if (!Array.isArray(tasks)) {
+      throw new Error('Gemini API did not return an array');
+    }
+
+    return tasks
+      .filter(task => task && task.text && typeof task.text === 'string')
+      .map(task => ({
+        text: task.text.substring(0, 200).trim(),
+        source: 'email',
+        importance: Math.max(1, Math.min(5, parseInt(task.importance) || calculateImportance(subject, body, task.text)))
+      }))
+      .slice(0, 5); // Limit to 5 tasks
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.error('Failed to parse Gemini API response as JSON:', error.message);
+      try {
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        const rawText = response.text();
+        console.error('Raw response (first 200 chars):', rawText.substring(0, 200));
+      } catch (e) {
+        // Ignore errors when trying to log
+      }
+    }
+    throw error;
+  }
+}
+
+/**
+ * Extracts tasks using regex patterns (fallback method)
  * @param {string} subject - Email subject
  * @param {string} body - Email body text
  * @returns {Array} Array of task objects
  */
-function extractTasks(subject, body) {
+function extractTasksWithRegex(subject, body) {
   const tasks = [];
   const text = `${subject} ${body}`.toLowerCase();
 
@@ -187,9 +427,9 @@ function extractDeadlines(subject, body, emailDate) {
 
   // Date patterns
   const datePatterns = [
-    /(?:due|deadline|submit by|turn in by|by)\s+(?:on\s+)?([A-Z][a-z]+day,?\s+\d{1,2}(?:\/\d{1,2})?(?:\/\d{2,4})?)/gi,
-    /(?:due|deadline|submit by|turn in by|by)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/gi,
-    /(?:due|deadline|submit by|turn in by|by)\s+([A-Z][a-z]+\s+\d{1,2}(?:st|nd|rd|th)?)/gi,
+    /(?:due|deadline|submit by|turn in by|by|to apply)\s+(?:on\s+)?([A-Z][a-z]+day,?\s+\d{1,2}(?:\/\d{1,2})?(?:\/\d{2,4})?)/gi,
+    /(?:due|deadline|submit by|turn in by|by|to apply)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/gi,
+    /(?:due|deadline|submit by|turn in by|by|to apply)\s+([A-Z][a-z]+\s+\d{1,2}(?:st|nd|rd|th)?)/gi,
     /(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s+(?:is|are)?\s+(?:due|deadline)/gi
   ];
 
