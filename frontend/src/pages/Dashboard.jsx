@@ -253,7 +253,7 @@ function Dashboard() {
       {!loading && !error && (
         <>
           {/* Productivity Timer Section */}
-          {isTimerAtZero ? ( <>
+          {!isTimerAtZero ? ( <>
             <div className="productivity-timer-section-event">
             <p className="productivity-timer-label productivity-timer-label-dark">YOUR NEXT PRODUCTIVITY PERIOD IS AT:</p>
                 <div className="productivity-period-display">
@@ -271,7 +271,7 @@ function Dashboard() {
           </>)}
 
           {/* Current Tasks Section */}
-          {isTimerAtZero ? ( <>
+          {!isTimerAtZero ? ( <>
             <div className="current-tasks-section-event">
             <h2 className="current-tasks-header-event">UPCOMING TASKS</h2>
             
@@ -329,7 +329,7 @@ function Dashboard() {
 
 
           {/* Bottom Navigation */}
-          {isTimerAtZero ? ( <>
+          {!isTimerAtZero ? ( <>
             <div className="bottom-navigation-event">
               <div className="nav-icon"></div>
               <div className="nav-icon"></div>
