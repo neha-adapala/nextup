@@ -74,7 +74,7 @@ export async function findFreeTimeSlots(accessToken, startDate = new Date(), end
       });
 
       // Find gaps between events
-      let lastEventEnd = dayStart;
+      let lastEventEnd = currentDate;
 
       dayEvents.forEach(event => {
         const eventStart = new Date(event.start);
@@ -140,6 +140,7 @@ export async function getNextBreak(accessToken) {
     }
 
     const nextSlot = freeSlots[0];
+    console.log(freeSlots);
     const now = new Date();
 
     // Check if this break is starting soon (within 5 minutes) or already started
