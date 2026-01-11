@@ -18,7 +18,7 @@ function ProductivityAlert({ isOpen, breakDurationMinutes, tasks, onClose }) {
               {tasks.map((task, index) => (
                 <div key={task.id || index} className="productivity-alert-task-item">
                   <span className="task-number">Task {index + 1} to complete:</span>
-                  <span className="task-name">{task.name || task.text}</span>
+                  <span className="task-name" style={{color: '#1a1a1a'}}>{task.name || task.text}</span>
                 </div>
               ))}
             </div>
@@ -29,7 +29,7 @@ function ProductivityAlert({ isOpen, breakDurationMinutes, tasks, onClose }) {
             className="productivity-alert-button"
             onClick={onClose}
           >
-            Got it
+            GOT IT
           </button>
         </div>
       </div>
