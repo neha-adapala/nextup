@@ -46,7 +46,7 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1 className="app-title">Between Classes</h1>
+          <h1 className="app-title">NextUp</h1>
           <p className="app-subtitle">Make the most of your free time</p>
         </div>
 

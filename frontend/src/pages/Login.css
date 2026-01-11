@@ -4,17 +4,15 @@
   align-items: center;
   min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, var(--background) 0%, #1a1f35 100%);
+  background-color:#FFAC89;
 }
 
 .login-card {
   width: 100%;
   max-width: 440px;
-  background: var(--surface);
+  background: #ff653d;
   border-radius: 16px;
   padding: 48px 40px;
-  box-shadow: 0 20px 60px var(--shadow);
-  border: 1px solid var(--border);
 }
 
 .login-header {
@@ -27,7 +25,7 @@
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  background-color: #ffffff;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -35,7 +33,7 @@
 
 .app-subtitle {
   font-size: 16px;
-  color: var(--text-secondary);
+  color: #ffeee2;
   font-weight: 400;
 }
 
@@ -45,7 +43,7 @@
 
 .login-description {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: #ffffff;
   text-align: center;
   margin-bottom: 24px;
   line-height: 1.6;
@@ -91,13 +89,12 @@
   justify-content: center;
   gap: 12px;
   transition: all 0.2s ease;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-primary);
+  background-color:#FFF6F3;
+  color: #ff653d;
 }
 
 .login-button:hover:not(:disabled) {
-  background: var(--surface-hover);
+  background-color: #ffd1bc;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px var(--shadow);
 }
@@ -139,7 +136,6 @@
 .login-footer {
   text-align: center;
   padding-top: 24px;
-  border-top: 1px solid var(--border);
 }
 
 .footer-text {
