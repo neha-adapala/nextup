@@ -512,6 +512,9 @@ function TaskList() {
             {sortedTasks.map((task) => {
               const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.done;
               
+              // Log estimated minutes to console
+              console.log(`Task: "${task.name}" - Estimated Minutes: ${task.estimatedMinutes || 'N/A'}`);
+              
               return (
                 <div 
                   key={task.id} 
@@ -549,11 +552,9 @@ function TaskList() {
                           📅 Due: {new Date(task.dueDate).toLocaleDateString()} {new Date(task.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       )}
-                      {task.estimatedMinutes && (
                         <span className="task-time">
-                          ⏱️ {task.estimatedMinutes} min
+                        ⏱️ {task.estimatedMinutes || 60} min
                         </span>
-                      )}
                       {task.sourceData?.emailSubject && (
                         <span className="task-email-source">
                           📧 {task.sourceData.emailSubject}

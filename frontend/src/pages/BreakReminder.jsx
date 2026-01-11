@@ -245,6 +245,9 @@ function BreakReminder() {
               {suggestedTasks.map((task) => {
                 const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.done;
                 
+                // Log estimated minutes to console
+                console.log(`Task: "${task.name}" - Estimated Minutes: ${task.estimatedMinutes || 'N/A'}`);
+                
                 return (
                   <div 
                     key={task.id} 
@@ -282,16 +285,9 @@ function BreakReminder() {
                             📅 Due: {new Date(task.dueDate).toLocaleDateString()} {new Date(task.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
-                        {task.estimatedMinutes && (
                           <span className="suggested-task-time">
-                            ⏱️ {task.estimatedMinutes} min
+                          ⏱️ {task.estimatedMinutes || 60} min
                           </span>
-                        )}
-                        {!task.estimatedMinutes && (
-                          <span className="suggested-task-time no-estimate">
-                            ⏱️ No time estimate
-                          </span>
-                        )}
                       </div>
                       <button
                         onClick={() => handleCompleteTask(task.id)}

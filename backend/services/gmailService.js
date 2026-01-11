@@ -294,6 +294,12 @@ async function extractTasks(subject, body, emailDate) {
   if (deadlines.length > 0 && tasks.length > 0) {
     tasks[0].dueDate = deadlines[0].date;
   }
+  // Add time estimates for regex-extracted tasks
+  tasks.forEach(task => {
+    if (!task.estimatedMinutes) {
+      task.estimatedMinutes = estimateTaskTime(task.text, subject, body);
+    }
+  });
   return tasks;
 }
 
@@ -326,11 +332,29 @@ Instructions:
 5. For each task, extract the deadline/due date if mentioned in the email
 6. Return ONLY a JSON array of task objects in this exact format:
 [
-  {"text": "Task summary here", "importance": 1-5, "dueDate": "YYYY-MM-DDTHH:mm:ss" or null},
+  {"text": "Task summary here", "importance": 1-5, "dueDate": "YYYY-MM-DDTHH:mm:ss" or null, "estimatedMinutes": number (REQUIRED, must be a positive integer)},
   ...
 ]
 
+IMPORTANT: estimatedMinutes is REQUIRED for every task. It must be a positive integer (number of minutes).
+
+For estimatedMinutes (REQUIRED):
+- You MUST always provide an estimate - this field is mandatory
+- If uncertain, use 60 minutes as a default estimate
+- Estimate how long the task will take to complete (in minutes)
+- Common estimates:
+  * Decision/evaluation tasks (evaluate, decide, choose): 5 minutes
+  * Quick tasks (reply to email, sign form): 10-15 minutes
+  * Applications (filling out forms): 30-60 minutes (simple: 30, complex: 60)
+  * Homework assignments: 30-60 minutes (short: 45, regular: 60)
+  * Medium assignments (essay, paper, report): 60-90 minutes
+  * Large assignments (full project, exam prep): 120-180 minutes
+- NEVER return null, undefined, "N/A", or any non-numeric value
+- ALWAYS return a number (minimum 1, maximum 1440)
+- If you cannot determine a specific estimate, return 500.
+
 The importance should be 1 (low) to 5 (critical). Consider urgency, deadlines, and keywords like "urgent", "asap", "deadline", "due", "exam", "test", etc.
+
 
 For dueDate:
 - Extract the deadline date if mentioned (format as ISO 8601 string: "YYYY-MM-DDTHH:mm:ss")
@@ -378,11 +402,26 @@ Return ONLY the JSON array, no other text.`;
           }
         }
         
+        // Parse and validate estimatedMinutes
+        let estimatedMinutes = null;
+        if (task.estimatedMinutes !== null && task.estimatedMinutes !== undefined) {
+          const parsed = parseInt(task.estimatedMinutes);
+          if (!isNaN(parsed) && parsed > 0 && parsed <= 1440) { // Max 24 hours
+            estimatedMinutes = parsed;
+          }
+        }
+        
+        // Fallback: estimate time if Gemini didn't provide one
+        if (!estimatedMinutes) {
+          estimatedMinutes = estimateTaskTime(task.text, subject, body);
+        }
+        
         return {
           text: task.text.substring(0, 200).trim(),
           source: 'email',
           importance: Math.max(1, Math.min(5, parseInt(task.importance) || calculateImportance(subject, body, task.text))),
-          dueDate: dueDate
+          dueDate: dueDate,
+          estimatedMinutes: estimatedMinutes
         };
       })
       .slice(0, 5); // Limit to 5 tasks
@@ -428,7 +467,8 @@ function extractTasksWithRegex(subject, body) {
         tasks.push({
           text: taskText.substring(0, 200),
           source: 'email',
-          importance: calculateImportance(subject, body, taskText)
+          importance: calculateImportance(subject, body, taskText),
+          estimatedMinutes: estimateTaskTime(taskText, subject, body)
         });
       }
     });
@@ -439,7 +479,8 @@ function extractTasksWithRegex(subject, body) {
     tasks.push({
       text: subject,
       source: 'email',
-      importance: calculateImportance(subject, body, subject)
+      importance: calculateImportance(subject, body, subject),
+      estimatedMinutes: estimateTaskTime(subject, subject, body)
     });
   }
 
@@ -542,6 +583,76 @@ function parseDate(dateStr, referenceDate) {
     console.error('Error parsing date:', dateStr, error);
     return null;
   }
+}
+
+/**
+ * Estimates time in minutes for a task based on task text and content
+ * @param {string} taskText - Task text/name
+ * @param {string} subject - Email subject (for context)
+ * @param {string} body - Email body text (for context)
+ * @returns {number} Estimated minutes
+ */
+function estimateTaskTime(taskText, subject = '', body = '') {
+  const text = `${taskText} ${subject} ${body}`.toLowerCase();
+  
+  // Decision/evaluation tasks (5 minutes) - highest priority
+  if (/evaluate|decide|review and decide|choose|select|approve decision/i.test(taskText)) {
+    return 5;
+  }
+  
+  // Quick tasks (reply to email, sign form): 10-15 minutes
+  if (/reply to|respond to|email|message/i.test(taskText) || 
+      /\b(sign|approve|confirm|acknowledge)\b/i.test(taskText)) {
+    return 15;
+  }
+  
+  // Applications and homework assignments: 30-60 minutes
+  if (/application|apply|form/i.test(text)) {
+    // Simple applications: 30 minutes, complex: 60 minutes
+    if (/(complex|detailed|extensive|multiple)/i.test(text)) {
+      return 60;
+    }
+    return 30;
+  }
+  
+  if (/homework|assignment/i.test(text)) {
+    // Short assignments: 45 minutes, regular: 60 minutes
+    if (/(short|brief|quick|mini)/i.test(text)) {
+      return 45;
+    }
+    return 60;
+  }
+  
+  // Short tasks (quiz, problem set): 30-45 minutes
+  if (/quiz|problem set/i.test(text)) {
+    return 45;
+  }
+  
+  // Medium tasks (essay, paper, report): 60-90 minutes
+  if (/essay|paper|report/i.test(text)) {
+    if (/(short|brief|mini)/i.test(text)) {
+      return 60;
+    }
+    return 90;
+  }
+  
+  // Large tasks (project, exam prep): 120-180 minutes
+  if (/project|presentation|final|exam|test|midterm|study.*for/i.test(text)) {
+    return 150;
+  }
+  
+  // Research/reading: 90 minutes
+  if (/research|read|review.*chapter|reading/i.test(text)) {
+    return 90;
+  }
+  
+  // Meetings/attend: 60 minutes
+  if (/attend|join|meeting|webinar|session/i.test(text)) {
+    return 60;
+  }
+  
+  // Default: 60 minutes (1 hour)
+  return 60;
 }
 
 /**
