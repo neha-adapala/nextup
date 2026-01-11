@@ -227,7 +227,19 @@
 }
 
 /* Bottom Navigation */
-.bottom-navigation {
+
+.bottom-navigation-pp {
+  background-color: #FFF6F3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 0;
+  margin-top: auto;
+}
+
+.bottom-navigation-event {
+  background-color: #FFD9CB;
   display: flex;
   justify-content: center;
   align-items: center;
