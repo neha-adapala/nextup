@@ -298,14 +298,14 @@ function Dashboard() {
             {todayTasks.length > 0 ? (
               <div className="current-tasks-list-event">
                 {todayTasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="current-task-card">
-                    <div className="task-card-header">
-                      <div className="task-duration-badge">
+                  <div key={task.id} className="current-task-card-event">
+                    <div className="task-card-header-event">
+                      <div className="task-duration-badge-event">
                         <span className="clock-icon">🕐</span>
                         <span>{task.estimatedMinutes || 15} min</span>
                       </div>
                       {task.dueDate && (
-                        <div className="task-due-date">{formatDueDate(task.dueDate)}</div>
+                        <div className="task-due-date-event">{formatDueDate(task.dueDate)}</div>
                       )}
                     </div>
                     <h3 className="task-title">{task.name || 'Task main descriptor'}</h3>
@@ -326,14 +326,14 @@ function Dashboard() {
             {todayTasks.length > 0 ? (
               <div className="current-tasks-list-pp">
                 {todayTasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="current-task-card">
-                    <div className="task-card-header">
-                      <div className="task-duration-badge">
+                  <div key={task.id} className="current-task-card-pp">
+                    <div className="task-card-header-pp">
+                      <div className="task-duration-badge-pp">
                         <span className="clock-icon">🕐</span>
                         <span>{task.estimatedMinutes || 15} min</span>
                       </div>
                       {task.dueDate && (
-                        <div className="task-due-date">{formatDueDate(task.dueDate)}</div>
+                        <div className="task-due-date-pp">{formatDueDate(task.dueDate)}</div>
                       )}
                     </div>
                     <h3 className="task-title">{task.name || 'Task main descriptor'}</h3>

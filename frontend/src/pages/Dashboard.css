@@ -70,7 +70,7 @@
 
 /* Current Tasks Section */
 .current-tasks-section-event {
-  background: #ff704b;
+  background: #FFF6F3;
   border-radius: 24px 24px 0 0;
   padding: 24px;
   flex: 1;
@@ -93,7 +93,7 @@
   
   font-size: 26px;
   font-weight: 600;
-  color: white;
+  color: #28272C;
   margin: 0 0 24px 0;
   text-align: center;
   text-transform: uppercase;
@@ -111,15 +111,12 @@
   letter-spacing: 1px;
 }
 
-.current-tasks-header-pp {
+.current-tasks-header-event {
   color: #1a1a1a;
 }
 
-.current-tasks-list-pp {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1;
+.current-tasks-header-pp {
+  color: white;
 }
 
 .current-tasks-list-event {
@@ -129,21 +126,55 @@
   flex: 1;
 }
 
-.current-task-card {
+.current-tasks-list-pp {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.current-task-card-event {
+  background: #FFAC89;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.current-task-card-pp {
   background: white;
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.task-card-header {
+.task-card-header-event {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 12px;
 }
 
-.task-duration-badge {
+.task-card-header-pp {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.task-duration-badge-event {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+ ;
+  color: black;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.task-duration-badge-pp {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -160,7 +191,14 @@
   font-size: 14px;
 }
 
-.task-due-date {
+.task-due-date-event {
+  color: black;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.task-due-date-pp {
   color: #ff6b35;
   font-size: 12px;
   font-weight: 600;
