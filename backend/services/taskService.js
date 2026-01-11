@@ -139,7 +139,7 @@ export async function getCombinedTaskList(userId, accessToken = null, refreshFro
     let emailTasks = [];
     if (refreshFromEmail && accessToken) {
       try {
-        const emails = await fetchEmails(accessToken, 100);
+        const emails = await fetchEmails(accessToken, 10);
         
         // Group emails by thread ID (email chain)
         const emailThreads = new Map();

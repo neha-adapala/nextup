@@ -74,7 +74,7 @@ export async function findFreeTimeSlots(accessToken, startDate = new Date(), end
       });
 
       // Find gaps between events
-      let lastEventEnd = dayStart;
+      let lastEventEnd = currentDate;
 
       dayEvents.forEach(event => {
         const eventStart = new Date(event.start);
