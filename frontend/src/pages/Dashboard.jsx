@@ -337,7 +337,7 @@ function Dashboard() {
                             )}
                             {task.source === 'email' && (
                               <span className="today-task-source">
-                                📧 From email
+                                📧 {task.sourceData?.emailFrom ? `From ${task.sourceData.emailFrom.split('<')[0].trim() || task.sourceData.emailFrom}` : 'From email'}
                               </span>
                             )}
                           </div>

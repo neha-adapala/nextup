@@ -28,7 +28,7 @@ router.get('/', authenticateToken, async (req, res) => {
       });
     }
 
-    const emails = await fetchEmails(user.accessToken, 50);
+    const emails = await fetchEmails(user.accessToken, 100);
     
     // Extract all tasks and deadlines from emails
     const allTasks = [];

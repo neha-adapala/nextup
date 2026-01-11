@@ -255,7 +255,9 @@ function BreakReminder() {
                       <div className="suggested-task-name-section">
                         <h3 className="suggested-task-name">{task.name}</h3>
                         {task.source === 'email' && (
-                          <span className="task-source-badge email">From Email</span>
+                          <span className="task-source-badge email">
+                            {task.sourceData?.emailFrom ? `From ${task.sourceData.emailFrom.split('<')[0].trim() || task.sourceData.emailFrom}` : 'From Email'}
+                          </span>
                         )}
                         {task.source === 'manual' && (
                           <span className="task-source-badge manual">Custom</span>

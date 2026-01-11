@@ -19,7 +19,7 @@ export async function getCombinedTaskList(userId, accessToken = null, refreshFro
     let emailTasks = [];
     if (refreshFromEmail && accessToken) {
       try {
-        const emails = await fetchEmails(accessToken, 50);
+        const emails = await fetchEmails(accessToken, 100);
         
         // Group emails by thread ID (email chain)
         const emailThreads = new Map();
@@ -47,6 +47,9 @@ export async function getCombinedTaskList(userId, accessToken = null, refreshFro
             // Use the first task found (most relevant)
             const taskData = latestEmail.tasks[0];
             const taskName = taskData.text?.substring(0, 500) || latestEmail.subject;
+            
+            // Use deadline from task if available, otherwise use email deadline
+            const taskDeadline = taskData.dueDate ? new Date(taskData.dueDate) : emailDeadline;
 
             // Check if task already exists for this thread
               const existingTask = dbTasks.find(t => 
@@ -61,7 +64,7 @@ export async function getCombinedTaskList(userId, accessToken = null, refreshFro
                 emailTasks.push({
                 name: taskName,
                   importance: taskData.importance || 3,
-                dueDate: emailDeadline,
+                dueDate: taskDeadline,
                   source: 'email',
                 sourceId: threadId, // Use threadId as sourceId
                   sourceData: {

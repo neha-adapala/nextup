@@ -20,10 +20,10 @@ if (process.env.GEMINI_API_KEY) {
 /**
  * Fetches emails from Gmail API
  * @param {string} accessToken - Google OAuth access token
- * @param {number} maxResults - Maximum number of emails to fetch (default: 50)
+ * @param {number} maxResults - Maximum number of emails to fetch (default: 100)
  * @returns {Promise<Array>} Array of email objects
  */
-export async function fetchEmails(accessToken, maxResults = 50) {
+export async function fetchEmails(accessToken, maxResults = 100) {
   try {
     // Calculate date 30 days ago
     const thirtyDaysAgo = new Date();
@@ -51,7 +51,7 @@ export async function fetchEmails(accessToken, maxResults = 50) {
     const messageIds = listData.messages || [];
 
     // Fetch full details for each message (including thread ID)
-    const emailPromises = messageIds.slice(0, 50).map(async (message) => {
+    const emailPromises = messageIds.slice(0, 100).map(async (message) => {
       try {
         const messageResponse = await fetch(
           `https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}?format=full`,
@@ -252,9 +252,8 @@ async function parseEmail(messageData) {
     }
   }
 
-  // Extract tasks and deadlines (tasks is now async)
-  const tasks = await extractTasks(subject, bodyText);
-  const deadlines = extractDeadlines(subject, bodyText, date);
+  // Extract tasks with deadlines (tasks now include deadlines from Gemini)
+  const tasks = await extractTasks(subject, bodyText, date);
 
   return {
     id: messageId,
@@ -264,7 +263,7 @@ async function parseEmail(messageData) {
     date: new Date(date),
     body: bodyText.substring(0, 500), // First 500 chars
     tasks,
-    deadlines,
+    deadlines: [], // Keep for backward compatibility, but tasks now include deadlines
     hasAttachment: messageData.payload.parts?.some(part => part.filename && part.filename.length > 0) || false
   };
 }
@@ -274,13 +273,14 @@ async function parseEmail(messageData) {
  * Falls back to regex patterns if Gemini API is unavailable
  * @param {string} subject - Email subject
  * @param {string} body - Email body text
- * @returns {Promise<Array>} Array of task objects
+ * @param {string} emailDate - Email date string (for deadline parsing)
+ * @returns {Promise<Array>} Array of task objects with deadlines
  */
-async function extractTasks(subject, body) {
+async function extractTasks(subject, body, emailDate) {
   // Try using Gemini API first if available
   if (genAI) {
     try {
-      return await extractTasksWithGemini(subject, body);
+      return await extractTasksWithGemini(subject, body, emailDate);
     } catch (error) {
       console.error('Error using Gemini API for task extraction, falling back to regex:', error.message);
       // Fall through to regex extraction
@@ -288,16 +288,23 @@ async function extractTasks(subject, body) {
   }
 
   // Fallback to regex-based extraction
-  return extractTasksWithRegex(subject, body);
+  const tasks = extractTasksWithRegex(subject, body);
+  // Add deadlines from regex extraction for fallback
+  const deadlines = extractDeadlines(subject, body, emailDate);
+  if (deadlines.length > 0 && tasks.length > 0) {
+    tasks[0].dueDate = deadlines[0].date;
+  }
+  return tasks;
 }
 
 /**
- * Extracts tasks using Gemini API
+ * Extracts tasks using Gemini API with deadlines
  * @param {string} subject - Email subject
  * @param {string} body - Email body text
- * @returns {Promise<Array>} Array of task objects
+ * @param {string} emailDate - Email date string (for deadline parsing)
+ * @returns {Promise<Array>} Array of task objects with deadlines
  */
-async function extractTasksWithGemini(subject, body) {
+async function extractTasksWithGemini(subject, body, emailDate) {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
   
   // Truncate body if too long (Gemini has token limits)
@@ -309,18 +316,27 @@ Email Subject: ${subject}
 
 Email Body: ${truncatedBody}
 
+Email Date: ${emailDate}
+
 Instructions:
 1. Identify all actionable tasks (assignments, applications, email replies, projects, etc.)
 2. For each task, create a clear, concise summary that describes what needs to be done
 3. Use action verbs like "Complete", "Submit", "Reply to", "Attend", "Prepare", etc.
 4. Keep each task summary under 150 characters
-5. Return ONLY a JSON array of task objects in this exact format:
+5. For each task, extract the deadline/due date if mentioned in the email
+6. Return ONLY a JSON array of task objects in this exact format:
 [
-  {"text": "Task summary here", "importance": 1-5},
+  {"text": "Task summary here", "importance": 1-5, "dueDate": "YYYY-MM-DDTHH:mm:ss" or null},
   ...
 ]
 
 The importance should be 1 (low) to 5 (critical). Consider urgency, deadlines, and keywords like "urgent", "asap", "deadline", "due", "exam", "test", etc.
+
+For dueDate:
+- Extract the deadline date if mentioned (format as ISO 8601 string: "YYYY-MM-DDTHH:mm:ss")
+- If no specific deadline is mentioned for a task, set dueDate to null
+- Use the email date as reference for relative dates (e.g., "next Monday", "in 3 days")
+- Only include dates in the future
 
 If no tasks are found, return an empty array: []
 
@@ -348,11 +364,27 @@ Return ONLY the JSON array, no other text.`;
 
     return tasks
       .filter(task => task && task.text && typeof task.text === 'string')
-      .map(task => ({
-        text: task.text.substring(0, 200).trim(),
-        source: 'email',
-        importance: Math.max(1, Math.min(5, parseInt(task.importance) || calculateImportance(subject, body, task.text)))
-      }))
+      .map(task => {
+        let dueDate = null;
+        if (task.dueDate) {
+          try {
+            dueDate = new Date(task.dueDate);
+            // Validate date is in the future
+            if (isNaN(dueDate.getTime()) || dueDate <= new Date()) {
+              dueDate = null;
+            }
+          } catch (e) {
+            dueDate = null;
+          }
+        }
+        
+        return {
+          text: task.text.substring(0, 200).trim(),
+          source: 'email',
+          importance: Math.max(1, Math.min(5, parseInt(task.importance) || calculateImportance(subject, body, task.text))),
+          dueDate: dueDate
+        };
+      })
       .slice(0, 5); // Limit to 5 tasks
   } catch (error) {
     if (error instanceof SyntaxError) {
