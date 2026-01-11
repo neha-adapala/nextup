@@ -183,9 +183,13 @@ function Dashboard() {
     const updateTimer = () => {
       const now = new Date();
       const breakStart = new Date(calendarData.nextBreak.start);
+      console.log("calendarData: ", calendarData);
+      console.log("calendarData.nextBreak.start: ", calendarData.nextBreak.start);
       const remaining = Math.max(0, Math.floor((breakStart.getTime() - now.getTime()) / 1000));
       setProductivityTimeRemaining(remaining);
+      console.log("breakStart: ", breakStart);
     };
+    
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
@@ -269,33 +273,30 @@ function Dashboard() {
       {!loading && !error && (
         <>
           {/* Productivity Timer Section */}
-          <div className="productivity-timer-section">
-            {isTimerAtZero ? (
-              <>
-                <p className="productivity-timer-label productivity-timer-label-dark">YOUR NEXT PRODUCTIVITY PERIOD IS AT:</p>
+          {isTimerAtZero ? ( <>
+            <div className="productivity-timer-section-event">
+            <p className="productivity-timer-label productivity-timer-label-dark">YOUR NEXT PRODUCTIVITY PERIOD IS AT:</p>
                 <div className="productivity-period-display">
                   <div className="period-date">{nextPeriodInfo.date}</div>
                   <div className="period-time">{nextPeriodInfo.time}</div>
                 </div>
-              </>
-            ) : (
-              <>
-                <p className="productivity-timer-label productivity-timer-label-orange">YOUR CURRENT PRODUCTIVITY PERIOD ENDS IN:</p>
-                <div className="productivity-timer-display">
-                  {productivityTimeRemaining !== null ? formatTime(productivityTimeRemaining) : '2:00:00'}
-                </div>
-              </>
-            )}
+            </div>
+          </>) : ( <>
+          <div className="productivity-timer-section-pp">
+            <p className="productivity-timer-label productivity-timer-label-orange">YOUR CURRENT PRODUCTIVITY PERIOD ENDS IN:</p>
+            <div className="productivity-timer-display">
+              {productivityTimeRemaining !== null ? formatTime(productivityTimeRemaining) : '2:00:00'}
+            </div>
           </div>
+          </>)}
 
           {/* Current Tasks Section */}
-          <div className="current-tasks-section">
-            <h2 className={`current-tasks-header ${isTimerAtZero ? 'current-tasks-header-dark' : ''}`}>
-              {isTimerAtZero ? 'UPCOMING TASKS' : 'CURRENT TASKS'}
-            </h2>
+          {isTimerAtZero ? ( <>
+            <div className="current-tasks-section-event">
+            <h2 className="current-tasks-header-event">UPCOMING TASKS</h2>
             
             {todayTasks.length > 0 ? (
-              <div className="current-tasks-list">
+              <div className="current-tasks-list-event">
                 {todayTasks.slice(0, 3).map((task) => (
                   <div key={task.id} className="current-task-card">
                     <div className="task-card-header">
@@ -317,14 +318,60 @@ function Dashboard() {
                 <p>No tasks for today</p>
               </div>
             )}
+            </div>
+          </>) : ( <>
+            <div className="current-tasks-section-pp">
+            <h2 className="current-tasks-header-pp">CURRENT TASKS</h2>
+            
+            {todayTasks.length > 0 ? (
+              <div className="current-tasks-list-pp">
+                {todayTasks.slice(0, 3).map((task) => (
+                  <div key={task.id} className="current-task-card">
+                    <div className="task-card-header">
+                      <div className="task-duration-badge">
+                        <span className="clock-icon">🕐</span>
+                        <span>{task.estimatedMinutes || 15} min</span>
+                      </div>
+                      {task.dueDate && (
+                        <div className="task-due-date">{formatDueDate(task.dueDate)}</div>
+                      )}
+                    </div>
+                    <h3 className="task-title">{task.name || 'Task main descriptor'}</h3>
+                    <p className="task-description">{task.description || 'Lorem ipsum description stuff'}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-tasks-message">
+                <p>No tasks for today</p>
+              </div>
+            )}
+            </div>
+          </>)}
 
-            {/* Bottom Navigation */}
-            <div className="bottom-navigation">
+
+          {/* Bottom Navigation */}
+          {isTimerAtZero ? ( <>
+            <div className="bottom-navigation-event">
               <div className="nav-icon"></div>
               <div className="nav-icon"></div>
               <div className="nav-icon"></div>
             </div>
-          </div>
+          </>) : ( <>
+            <div className="bottom-navigation-pp">
+              <div className="nav-icon"></div>
+              <div className="nav-icon"></div>
+              <div className="nav-icon"></div>
+            </div>
+          </>)}
+          
+          
+
+
+
+
+
+
         </>
       )}
     </div>
