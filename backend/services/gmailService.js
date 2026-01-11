@@ -23,7 +23,7 @@ if (process.env.GEMINI_API_KEY) {
  * @param {number} maxResults - Maximum number of emails to fetch (default: 100)
  * @returns {Promise<Array>} Array of email objects
  */
-export async function fetchEmails(accessToken, maxResults = 100) {
+export async function fetchEmails(accessToken, maxResults = 10) {
   try {
     // Calculate date 30 days ago
     const thirtyDaysAgo = new Date();
@@ -51,7 +51,7 @@ export async function fetchEmails(accessToken, maxResults = 100) {
     const messageIds = listData.messages || [];
 
     // Fetch full details for each message (including thread ID)
-    const emailPromises = messageIds.slice(0, 100).map(async (message) => {
+    const emailPromises = messageIds.slice(0, maxResults).map(async (message) => {
       try {
         const messageResponse = await fetch(
           `https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}?format=full`,
