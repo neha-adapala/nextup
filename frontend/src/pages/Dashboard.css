@@ -95,6 +95,7 @@
   font-weight: 600;
   color: #28272C;
   margin: 0 0 24px 0;
+  margin-top: 26px;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -289,6 +290,31 @@
   color: #ef4444;
   margin-bottom: 16px;
   font-size: 16px;
+}
+
+.logout-button {
+  position:absolute;
+  top: 16px;
+  left: 16px;
+  padding: 6px 13px;
+  color: #ff6b35;
+  background: #f5f1e8;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.logout-button:hover {
+  background: #ff6b35;
+  border-color: #f5f1e8;
+  transform: translateY(-1px);
+}
+
+.logout-button:active {
+  transform: translateY(0);
 }
 
 .retry-button {

@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../components/ToastContainer';
+import ProductivityAlert from '../components/ProductivityAlert';
 import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -17,6 +18,8 @@ function Dashboard() {
   const [taskStats, setTaskStats] = useState(null);
   const [calendarData, setCalendarData] = useState(null);
   const [error, setError] = useState(null);
+  const [showProductivityAlert, setShowProductivityAlert] = useState(false);
+  const prevIsTimerAtZeroRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -176,7 +179,11 @@ function Dashboard() {
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    updateTimeToStartTimer();
+    const interval = setInterval(() => {
+      updateTimer();
+      updateTimeToStartTimer();
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [calendarData]);
@@ -222,6 +229,69 @@ function Dashboard() {
 
   const isTimerAtZero = productivityTimeRemaining !== null && timeToStartRemaining > 0;
   
+  // Detect when productivity period starts (transition from isTimerAtZero=true to false)
+  useEffect(() => {
+    // Only show alert if we transition from waiting (true) to in period (false)
+    // Don't show on initial load (when prevIsTimerAtZeroRef.current is null)
+    if (prevIsTimerAtZeroRef.current !== null && prevIsTimerAtZeroRef.current === true && isTimerAtZero === false) {
+      // We just entered a productivity period - show the alert
+      setShowProductivityAlert(true);
+    }
+    prevIsTimerAtZeroRef.current = isTimerAtZero;
+  }, [isTimerAtZero]);
+  
+  // Calculate productivity period duration in minutes (time remaining until next break)
+  const getProductivityPeriodMinutes = () => {
+    if (productivityTimeRemaining === null) {
+      return null;
+    }
+    // Convert from seconds to minutes
+    return Math.floor(productivityTimeRemaining / 60);
+  };
+  
+  // Filter tasks that fit within the productivity break time
+  const getTasksFittingInBreakTime = () => {
+    if (productivityTimeRemaining === null) {
+      // If no break time data, return empty array
+      return [];
+    }
+    
+    // Convert productivity time remaining from seconds to minutes
+    // Use Math.max to ensure we have at least 1 minute even if timer is at zero
+    const breakTimeMinutes = Math.max(1, Math.floor(productivityTimeRemaining / 60));
+    
+    // Sort tasks by importance (descending), then by due date (ascending)
+    const sortedTasks = [...todayTasks].sort((a, b) => {
+      // First sort by importance (higher is better)
+      if (b.importance !== a.importance) {
+        return (b.importance || 3) - (a.importance || 3);
+      }
+      // Then by due date (earlier is better)
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      }
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return 0;
+    });
+    
+    // Select tasks that fit within the break time (up to 3 tasks)
+    const selectedTasks = [];
+    let totalMinutes = 0;
+    
+    for (const task of sortedTasks) {
+      const taskMinutes = task.estimatedMinutes || 15; // Default to 15 minutes if not specified
+      
+      // Check if adding this task would keep us under the break time
+      if (totalMinutes + taskMinutes <= breakTimeMinutes && selectedTasks.length < 3) {
+        selectedTasks.push(task);
+        totalMinutes += taskMinutes;
+      }
+    }
+    
+    return selectedTasks;
+  };
+  
   // Get next period info - if timer is at zero, show next break, otherwise calculate from current break end
   const getNextPeriodInfo = () => {
     if (calendarData?.hasBreak && calendarData.nextBreak.start) {
@@ -256,6 +326,11 @@ function Dashboard() {
 
       {!loading && !error && (
         <>
+          {/* Logout Button */}
+          <button onClick={handleLogout} className="logout-button">
+            Logout
+          </button>
+
           {/* Productivity Timer Section */}
           {isTimerAtZero ? ( <>
             <div className="productivity-timer-section-event">
@@ -306,9 +381,11 @@ function Dashboard() {
             <div className="current-tasks-section-pp">
             <h2 className="current-tasks-header-pp">CURRENT TASKS</h2>
             
-            {todayTasks.length > 0 ? (
+            {(() => {
+              const fittingTasks = getTasksFittingInBreakTime();
+              return fittingTasks.length > 0 ? (
               <div className="current-tasks-list-pp">
-                {todayTasks.slice(0, 3).map((task) => (
+                {fittingTasks.map((task) => (
                   <div key={task.id} className="current-task-card-pp">
                     <div className="task-card-header-pp">
                       <div className="task-duration-badge-pp">
@@ -327,7 +404,8 @@ function Dashboard() {
               <div className="no-tasks-message">
                 <p>No tasks for today</p>
               </div>
-            )}
+            );
+            })()}
             </div>
           </>)}
 
@@ -356,6 +434,14 @@ function Dashboard() {
 
         </>
       )}
+
+      {/* Productivity Alert */}
+      <ProductivityAlert
+        isOpen={showProductivityAlert}
+        breakDurationMinutes={getProductivityPeriodMinutes()}
+        tasks={getTasksFittingInBreakTime()}
+        onClose={() => setShowProductivityAlert(false)}
+      />
     </div>
   );
 }
