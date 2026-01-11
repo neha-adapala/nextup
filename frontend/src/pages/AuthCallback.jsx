@@ -11,6 +11,8 @@ function AuthCallback() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const variant = searchParams.get('variant') === 'current' ? 'current' : 'next';
+
   useEffect(() => {
     const token = searchParams.get('token');
     const error = searchParams.get('error');
@@ -44,11 +46,63 @@ function AuthCallback() {
     }
   }, [searchParams, navigate, login]);
 
+  const now = new Date();
+  const dateText = now
+    .toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    .toUpperCase();
+  const timeText = now
+    .toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    .toUpperCase();
+
   return (
-    <div className="callback-container">
-      <div className="callback-content">
-        <div className="callback-spinner"></div>
-        <p>Completing sign in...</p>
+    <div className={`callback-container callback-${variant}`}>
+      <div className="callback-shell">
+        <header className="callback-hero" aria-live="polite">
+          <h1 className="callback-hero-title">
+            {variant === 'current'
+              ? 'YOUR CURRENT PRODUCTIVITY PERIOD ENDS IN:'
+              : 'YOUR NEXT PRODUCTIVITY PERIOD IS AT:'}
+          </h1>
+
+          <div className="callback-hero-value" aria-label="Sign in in progress">
+            {variant === 'current' ? (
+              <div className="callback-countdown">1:50:50</div>
+            ) : (
+              <>
+                <div className="callback-date">{dateText}</div>
+                <div className="callback-time">{timeText}</div>
+              </>
+            )}
+          </div>
+
+          <div className="callback-spinner" aria-hidden="true" />
+          <p className="callback-status">Completing sign in…</p>
+        </header>
+
+        <section className="callback-section" aria-label="Tasks preview">
+          <h2 className="callback-section-title">
+            {variant === 'current' ? 'CURRENT TASKS' : 'UPCOMING TASKS'}
+          </h2>
+
+          <div className="callback-task-list">
+            {[0, 1, 2].map((idx) => (
+              <div className="callback-task-card" key={idx}>
+                <div className="callback-task-top">
+                  <div className="callback-pill" aria-label="Estimated time">
+                    <span className="callback-pill-icon" aria-hidden="true">
+                      🕒
+                    </span>
+                    <span className="callback-pill-text">15 min</span>
+                  </div>
+                  <div className="callback-due">DUE 1/1/25</div>
+                </div>
+
+                <div className="callback-task-title">Task main descriptor</div>
+                <div className="callback-task-subtitle">Lorem ipsum description stuff</div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );
