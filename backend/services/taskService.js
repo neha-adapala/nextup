@@ -21,63 +21,88 @@ export async function getCombinedTaskList(userId, accessToken = null, refreshFro
       try {
         const emails = await fetchEmails(accessToken, 50);
         
-        // Extract tasks from emails
+        // Group emails by thread ID (email chain)
+        const emailThreads = new Map();
         emails.forEach(email => {
-          if (email.tasks && email.tasks.length > 0) {
-            email.tasks.forEach(taskData => {
-              // Check if task already exists in database
-              const taskName = taskData.text?.substring(0, 200) || email.subject;
-              const existingTask = dbTasks.find(t => 
-                t.source === 'email' && 
-                t.sourceId === email.id &&
-                t.name && taskName &&
-                (t.name.toLowerCase().includes(taskName.toLowerCase().substring(0, 50)) ||
-                 taskName.toLowerCase().includes(t.name.toLowerCase().substring(0, 50)))
-              );
-
-              if (!existingTask) {
-                emailTasks.push({
-                  name: taskData.text?.substring(0, 500) || email.subject,
-                  importance: taskData.importance || 3,
-                  source: 'email',
-                  sourceId: email.id,
-                  sourceData: {
-                    emailSubject: email.subject,
-                    emailFrom: email.from,
-                    emailDate: email.date
-                  }
-                });
-              }
-            });
+          const threadId = email.threadId || email.id; // Use threadId, fallback to messageId if no thread
+          if (!emailThreads.has(threadId)) {
+            emailThreads.set(threadId, []);
           }
+          emailThreads.get(threadId).push(email);
+        });
 
-          // Convert deadlines to tasks
-          if (email.deadlines && email.deadlines.length > 0) {
-            email.deadlines.forEach(deadline => {
-              const taskName = `${email.subject} - Due ${new Date(deadline.date).toLocaleDateString()}`;
-              const existingTask = dbTasks.find(t => 
-                t.source === 'email' && 
-                t.sourceId === email.id &&
-                t.dueDate &&
-                Math.abs(new Date(t.dueDate) - new Date(deadline.date)) < 24 * 60 * 60 * 1000 // Within 24 hours
-              );
+        // Process each thread: get latest email and extract one task
+        emailThreads.forEach((threadEmails, threadId) => {
+          // Sort by date (latest first)
+          threadEmails.sort((a, b) => new Date(b.date) - new Date(a.date));
+          const latestEmail = threadEmails[0]; // Get the latest email in the thread
 
-              if (!existingTask) {
-                emailTasks.push({
-                  name: taskName,
-                  description: `Deadline from email: ${email.subject}`,
-                  importance: 4, // Deadlines are important
-                  dueDate: new Date(deadline.date),
-                  source: 'email',
-                  sourceId: email.id,
-                  sourceData: {
-                    emailSubject: email.subject,
-                    emailFrom: email.from,
-                    isDeadline: true
-                  }
-                });
-              }
-            });
+          // Get the first deadline from the latest email
+          const emailDeadline = latestEmail.deadlines && latestEmail.deadlines.length > 0 
+            ? new Date(latestEmail.deadlines[0].date) 
+            : null;
+
+          // Extract one task from the latest email
+          if (latestEmail.tasks && latestEmail.tasks.length > 0) {
+            // Use the first task found (most relevant)
+            const taskData = latestEmail.tasks[0];
+            const taskName = taskData.text?.substring(0, 500) || latestEmail.subject;
+
+            // Check if task already exists for this thread
+            const existingTask = dbTasks.find(t => 
+              t.source === 'email' && 
+              (t.sourceId === threadId || (t.sourceData?.threadId === threadId)) &&
+              t.name && taskName &&
+              (t.name.toLowerCase().includes(taskName.toLowerCase().substring(0, 50)) ||
+               taskName.toLowerCase().includes(t.name.toLowerCase().substring(0, 50)))
+            );
+
+            if (!existingTask) {
+              emailTasks.push({
+                name: taskName,
+                importance: taskData.importance || 3,
+                dueDate: emailDeadline,
+                source: 'email',
+                sourceId: threadId, // Use threadId as sourceId
+                sourceData: {
+                  emailSubject: latestEmail.subject,
+                  emailFrom: latestEmail.from,
+                  emailDate: latestEmail.date,
+                  threadId: threadId,
+                  messageId: latestEmail.id,
+                  threadEmailCount: threadEmails.length
+                }
+              });
+            }
+          } else if (emailDeadline) {
+            // If no tasks found but there's a deadline, create a task from the deadline
+            const taskName = `${latestEmail.subject} - Due ${new Date(emailDeadline).toLocaleDateString()}`;
+            const existingTask = dbTasks.find(t => 
+              t.source === 'email' && 
+              (t.sourceId === threadId || (t.sourceData?.threadId === threadId)) &&
+              t.dueDate &&
+              Math.abs(new Date(t.dueDate) - emailDeadline) < 24 * 60 * 60 * 1000 // Within 24 hours
+            );
+
+            if (!existingTask) {
+              emailTasks.push({
+                name: taskName,
+                description: `Deadline from email: ${latestEmail.subject}`,
+                importance: 4, // Deadlines are important
+                dueDate: emailDeadline,
+                source: 'email',
+                sourceId: threadId,
+                sourceData: {
+                  emailSubject: latestEmail.subject,
+                  emailFrom: latestEmail.from,
+                  emailDate: latestEmail.date,
+                  threadId: threadId,
+                  messageId: latestEmail.id,
+                  threadEmailCount: threadEmails.length,
+                  isDeadline: true
+                }
+              });
+            }
           }
         });
 

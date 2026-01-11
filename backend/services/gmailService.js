@@ -28,8 +28,8 @@ export async function fetchEmails(accessToken, maxResults = 50) {
     const listData = await listResponse.json();
     const messageIds = listData.messages || [];
 
-    // Fetch full details for each message
-    const emailPromises = messageIds.slice(0, 20).map(async (message) => {
+    // Fetch full details for each message (including thread ID)
+    const emailPromises = messageIds.slice(0, 50).map(async (message) => {
       try {
         const messageResponse = await fetch(
           `https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}?format=full`,
@@ -42,7 +42,23 @@ export async function fetchEmails(accessToken, maxResults = 50) {
         );
 
         if (!messageResponse.ok) {
-          console.error(`Failed to fetch message ${message.id}`);
+          // Only log non-404 errors (404 means message was deleted/moved, which is normal)
+          if (messageResponse.status !== 404) {
+            let errorDetails = '';
+            try {
+              const errorText = await messageResponse.text();
+              errorDetails = errorText.substring(0, 200);
+            } catch (e) {
+              // Ignore if we can't read error text
+            }
+            console.error(`Failed to fetch message ${message.id}: ${messageResponse.status} ${messageResponse.statusText}`);
+            if (messageResponse.status === 401 || messageResponse.status === 403) {
+              // Auth errors are more serious - log the error details
+              if (errorDetails) {
+                console.error('Gmail API auth error details:', errorDetails);
+              }
+            }
+          }
           return null;
         }
 
@@ -55,7 +71,9 @@ export async function fetchEmails(accessToken, maxResults = 50) {
     });
 
     const emails = await Promise.all(emailPromises);
-    return emails.filter(email => email !== null);
+    const validEmails = emails.filter(email => email !== null);
+    
+    return validEmails;
   } catch (error) {
     console.error('Error fetching emails:', error);
     throw error;
@@ -75,6 +93,7 @@ function parseEmail(messageData) {
   const from = getHeader('from');
   const date = getHeader('date');
   const messageId = messageData.id;
+  const threadId = messageData.threadId; // Get thread ID to group email chains
 
   // Extract body text
   let bodyText = '';
@@ -100,6 +119,7 @@ function parseEmail(messageData) {
 
   return {
     id: messageId,
+    threadId: threadId, // Include thread ID for grouping
     subject,
     from,
     date: new Date(date),
