@@ -337,7 +337,7 @@ function Dashboard() {
                       )}
                     </div>
                     <h3 className="task-title">{task.name || 'Task main descriptor'}</h3>
-                    <p className="task-description">{task.description || 'Lorem ipsum description stuff'}</p>
+                    <p className="task-description">{task.sourceData.emailFrom || 'Lorem ipsum description stuff'}</p>
                   </div>
                 ))}
               </div>
