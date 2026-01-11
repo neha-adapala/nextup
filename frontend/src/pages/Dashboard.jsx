@@ -293,7 +293,16 @@ function Dashboard() {
           {/* Current Tasks Section */}
           {isTimerAtZero ? ( <>
             <div className="current-tasks-section-event">
-            <h2 className="current-tasks-header-event">UPCOMING TASKS</h2>
+            <div className="current-tasks-header-wrapper">
+              <h2 className="current-tasks-header-event">UPCOMING TASKS</h2>
+              <button 
+                onClick={() => navigate('/tasks')} 
+                className="add-task-button-small"
+                title="Add Task"
+              >
+                +
+              </button>
+            </div>
             
             {todayTasks.length > 0 ? (
               <div className="current-tasks-list-event">
@@ -309,7 +318,7 @@ function Dashboard() {
                       )}
                     </div>
                     <h3 className="task-title">{task.name || 'Task main descriptor'}</h3>
-                    <p className="task-description">{task.description || 'Lorem ipsum description stuff'}</p>
+                    <p className="task-description">{task.sourceData.emailFrom || 'Lorem ipsum description stuff'}</p>
                   </div>
                 ))}
               </div>
