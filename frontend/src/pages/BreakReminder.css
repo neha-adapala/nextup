@@ -1,0 +1,464 @@
+.break-reminder-container {
+  min-height: 100vh;
+  background: var(--background);
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.break-reminder-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 900px;
+  width: 100%;
+  box-shadow: 0 20px 60px var(--shadow);
+}
+
+.break-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+}
+
+.break-icon-large {
+  font-size: 64px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.break-title-section {
+  flex: 1;
+}
+
+.break-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.break-subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.break-info-card {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 32px;
+  color: white;
+}
+
+.break-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.break-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.break-info-label {
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.break-info-value {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.suggested-tasks-section {
+  margin-bottom: 32px;
+}
+
+.suggested-tasks-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 24px 0;
+}
+
+.suggested-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.suggested-task-item {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.suggested-task-item:hover {
+  border-color: var(--primary-color);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.suggested-task-item.overdue {
+  border-left-color: var(--error);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.suggested-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.suggested-task-name-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.suggested-task-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.task-source-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.task-source-badge.email {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.task-source-badge.manual {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.suggested-task-importance {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.suggested-task-description {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+
+.suggested-task-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.suggested-task-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.suggested-task-due {
+  color: var(--text-secondary);
+}
+
+.suggested-task-due.overdue {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.suggested-task-time {
+  color: var(--text-secondary);
+}
+
+.suggested-task-time.no-estimate {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.complete-task-button {
+  padding: 8px 20px;
+  background: var(--success);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.complete-task-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.no-tasks-section {
+  text-align: center;
+  padding: 48px 24px;
+  margin-bottom: 32px;
+}
+
+.no-tasks-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.no-tasks-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.no-tasks-message {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 32px 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.no-tasks-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.view-all-tasks-button,
+.back-to-dashboard-button,
+.back-to-dashboard-button-secondary {
+  padding: 12px 24px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-all-tasks-button:hover,
+.back-to-dashboard-button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.back-to-dashboard-button-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.back-to-dashboard-button-secondary:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-color);
+}
+
+.break-reminder-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.refresh-button {
+  padding: 12px 24px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-color);
+}
+
+.loading-state,
+.error-state,
+.no-break-state {
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  max-width: 600px;
+  width: 100%;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 24px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: var(--error);
+  font-size: 18px;
+  margin-bottom: 24px;
+}
+
+.no-break-state h1 {
+  font-size: 32px;
+  color: var(--text-primary);
+  margin: 0 0 32px 0;
+}
+
+.countdown-display {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  border-radius: 12px;
+  padding: 32px;
+  margin-bottom: 32px;
+  color: white;
+}
+
+.countdown-label {
+  font-size: 16px;
+  opacity: 0.9;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.countdown-time {
+  font-size: 48px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  line-height: 1;
+}
+
+.countdown-break-time {
+  font-size: 18px;
+  opacity: 0.9;
+  margin: 0 0 8px 0;
+}
+
+.countdown-duration {
+  font-size: 16px;
+  opacity: 0.85;
+  margin: 0;
+}
+
+.no-break-message {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin: 0 0 32px 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .break-reminder-container {
+    padding: 16px;
+  }
+
+  .break-reminder-card {
+    padding: 24px;
+  }
+
+  .break-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .break-icon-large {
+    font-size: 48px;
+  }
+
+  .break-title {
+    font-size: 28px;
+  }
+
+  .break-subtitle {
+    font-size: 16px;
+  }
+
+  .suggested-task-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .suggested-task-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .complete-task-button {
+    width: 100%;
+  }
+
+  .break-reminder-actions {
+    flex-direction: column;
+  }
+
+  .back-to-dashboard-button-secondary,
+  .refresh-button {
+    width: 100%;
+  }
+
+  .countdown-time {
+    font-size: 36px;
+  }
+}
+
