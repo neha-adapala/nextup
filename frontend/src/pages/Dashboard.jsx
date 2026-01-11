@@ -169,232 +169,163 @@ function Dashboard() {
   };
 
   const todayTasks = getTodayTasks();
+  const [productivityTimeRemaining, setProductivityTimeRemaining] = useState(null);
+
+  // Calculate productivity period countdown (time until next break)
+  useEffect(() => {
+    if (!calendarData?.hasBreak || !calendarData.nextBreak.start) {
+      // Default to 2 hours if no break data
+      setProductivityTimeRemaining(2 * 3600);
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = new Date();
+      const breakStart = new Date(calendarData.nextBreak.start);
+      const remaining = Math.max(0, Math.floor((breakStart.getTime() - now.getTime()) / 1000));
+      setProductivityTimeRemaining(remaining);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [calendarData]);
+
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const formatDueDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const year = date.getFullYear().toString().slice(-2);
+    return `DUE ${month}/${day}/${year}`;
+  };
+
+  const formatNextPeriodDate = (dateString) => {
+    if (!dateString) {
+      // Default fallback date
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 1);
+      defaultDate.setHours(15, 50, 0, 0);
+      dateString = defaultDate.toISOString();
+    }
+    const date = new Date(dateString);
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = String(minutes).padStart(2, '0');
+    return {
+      date: `${month} ${day}`,
+      time: `${displayHours}:${displayMinutes} ${ampm}`
+    };
+  };
+
+  const isTimerAtZero = productivityTimeRemaining !== null && productivityTimeRemaining <= 0;
+  
+  // Get next period info - if timer is at zero, show next break, otherwise calculate from current break end
+  const getNextPeriodInfo = () => {
+    if (calendarData?.hasBreak && calendarData.nextBreak.start) {
+      // If we're in a break, the next period starts when this break ends
+      if (isTimerAtZero && calendarData.nextBreak.end) {
+        return formatNextPeriodDate(calendarData.nextBreak.end);
+      }
+      // Otherwise, show when the next break starts (which is when current period ends)
+      return formatNextPeriodDate(calendarData.nextBreak.start);
+    }
+    // Fallback to default
+    return formatNextPeriodDate(null);
+  };
+
+  const nextPeriodInfo = getNextPeriodInfo();
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>Welcome, {user?.name || 'User'}!</h1>
-        <div className="header-actions">
-          <button onClick={handleRefresh} className="refresh-button" disabled={loading}>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
-          <button onClick={handleLogout} className="logout-button">
-            Logout
-          </button>
+      {loading && (
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading your dashboard...</p>
         </div>
-      </header>
+      )}
 
-      <main className="dashboard-content">
-        {loading && (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>Loading your dashboard...</p>
-          </div>
-        )}
+      {error && (
+        <div className="error-state">
+          <p className="error-message">{error}</p>
+          <button onClick={handleRefresh} className="retry-button">Try Again</button>
+        </div>
+      )}
 
-        {error && (
-          <div className="error-state">
-            <p className="error-message">{error}</p>
-            <button onClick={handleRefresh} className="retry-button">Try Again</button>
-          </div>
-        )}
-
-        {!loading && !error && (
-          <>
-            {/* Completed Count - Prominent Display (S-002 requirement) */}
-            <section className="dashboard-section completed-count-section">
-              <div className="completed-count-card">
-                <div className="completed-icon">✓</div>
-                <div className="completed-count-content">
-                  <h2 className="completed-count-number">{user?.completedTasksCount || 0}</h2>
-                  <p className="completed-count-label">Tasks Completed</p>
+      {!loading && !error && (
+        <>
+          {/* Productivity Timer Section */}
+          <div className="productivity-timer-section">
+            {isTimerAtZero ? (
+              <>
+                <p className="productivity-timer-label productivity-timer-label-dark">YOUR NEXT PRODUCTIVITY PERIOD IS AT:</p>
+                <div className="productivity-period-display">
+                  <div className="period-date">{nextPeriodInfo.date}</div>
+                  <div className="period-time">{nextPeriodInfo.time}</div>
                 </div>
-                <div className="completed-count-message">
-                  Great job! Keep it up! 🎉
+              </>
+            ) : (
+              <>
+                <p className="productivity-timer-label productivity-timer-label-orange">YOUR CURRENT PRODUCTIVITY PERIOD ENDS IN:</p>
+                <div className="productivity-timer-display">
+                  {productivityTimeRemaining !== null ? formatTime(productivityTimeRemaining) : '2:00:00'}
                 </div>
-              </div>
-            </section>
+              </>
+            )}
+          </div>
 
-            {/* Next Break Section (S-002 requirement) */}
-            <section className="dashboard-section">
-              <div className="section-header">
-                <h2>Next Break</h2>
-                {calendarData?.hasBreak && calendarData.nextBreak.isStartingSoon && (
-                  <button 
-                    onClick={() => navigate('/break-reminder')} 
-                    className="view-break-reminder-button"
-                  >
-                    View Break Reminder →
-                  </button>
-                )}
-              </div>
-              {calendarData?.hasBreak ? (
-                <div className="next-break-card">
-                  <div className="break-header">
-                    <span className="break-icon">⏰</span>
-                    {calendarData.nextBreak.isStartingSoon && (
-                      <span className="break-alert-badge">Starting Soon!</span>
-                    )}
-                  </div>
-                  <div className="break-time">
-                    <span className="break-label">Starts:</span>
-                    <span className="break-value">
-                      {new Date(calendarData.nextBreak.start).toLocaleDateString()} at {new Date(calendarData.nextBreak.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <div className="break-duration">
-                    <span className="break-label">Duration:</span>
-                    <span className="break-value">{calendarData.nextBreak.durationMinutes} minutes</span>
-                  </div>
-                  {calendarData.nextBreak.minutesUntilStart !== undefined && (
-                    <div className="break-countdown">
-                      {calendarData.nextBreak.minutesUntilStart > 0 ? (
-                        <span>{calendarData.nextBreak.minutesUntilStart} minutes until break starts</span>
-                      ) : (
-                        <div>
-                          <span className="break-now">Break time now! 🎉</span>
-                          <button 
-                            onClick={() => navigate('/break-reminder')} 
-                            className="view-reminder-button"
-                            style={{ marginTop: '12px', width: '100%' }}
-                          >
-                            View Tasks for This Break
-                          </button>
-                        </div>
+          {/* Current Tasks Section */}
+          <div className="current-tasks-section">
+            <h2 className={`current-tasks-header ${isTimerAtZero ? 'current-tasks-header-dark' : ''}`}>
+              {isTimerAtZero ? 'UPCOMING TASKS' : 'CURRENT TASKS'}
+            </h2>
+            
+            {todayTasks.length > 0 ? (
+              <div className="current-tasks-list">
+                {todayTasks.slice(0, 3).map((task) => (
+                  <div key={task.id} className="current-task-card">
+                    <div className="task-card-header">
+                      <div className="task-duration-badge">
+                        <span className="clock-icon">🕐</span>
+                        <span>{task.estimatedMinutes || 15} min</span>
+                      </div>
+                      {task.dueDate && (
+                        <div className="task-due-date">{formatDueDate(task.dueDate)}</div>
                       )}
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="no-break-message">
-                  <p>No free time found in the next 24 hours</p>
-                  <button onClick={handleRefresh} className="refresh-break-button">
-                    Refresh Calendar
-                  </button>
-                </div>
-              )}
-            </section>
-
-            {/* Today's Tasks Section (S-002 requirement) */}
-            <section className="dashboard-section">
-              <div className="section-header">
-                <h2>Today's Tasks</h2>
-                <button 
-                  onClick={() => navigate('/tasks')} 
-                  className="view-all-tasks-button"
-                >
-                  View All Tasks →
-                </button>
+                    <h3 className="task-title">{task.name || 'Task main descriptor'}</h3>
+                    <p className="task-description">{task.description || 'Lorem ipsum description stuff'}</p>
+                  </div>
+                ))}
               </div>
-              {todayTasks.length > 0 ? (
-                <div className="today-tasks-list">
-                  {todayTasks.slice(0, 5).map((task) => {
-                    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.done;
-                    const importanceColors = {
-                      5: '#ef4444',
-                      4: '#f59e0b',
-                      3: '#3b82f6',
-                      2: '#6b7280',
-                      1: '#9ca3af'
-                    };
-                    const importanceLabels = {
-                      5: 'Critical',
-                      4: 'High',
-                      3: 'Medium',
-                      2: 'Low',
-                      1: 'Very Low'
-                    };
-                    
-                    return (
-                      <div 
-                        key={task.id} 
-                        className={`today-task-item ${isOverdue ? 'overdue' : ''}`}
-                        style={{ borderLeftColor: importanceColors[task.importance] || '#3b82f6' }}
-                      >
-                        <div className="today-task-main">
-                          <h3 className="today-task-name">{task.name}</h3>
-                          <span 
-                            className="today-task-importance"
-                            style={{ backgroundColor: importanceColors[task.importance] || '#3b82f6' }}
-                          >
-                            {task.importance} - {importanceLabels[task.importance]}
-                          </span>
-                        </div>
-                        {task.description && (
-                          <p className="today-task-description">{task.description}</p>
-                        )}
-                        <div className="today-task-footer">
-                          <div className="today-task-meta">
-                            {task.dueDate && (
-                              <span className={`today-task-due ${isOverdue ? 'overdue' : ''}`}>
-                                📅 Due: {new Date(task.dueDate).toLocaleDateString()} {new Date(task.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            )}
-                            {task.estimatedMinutes && (
-                              <span className="today-task-time">
-                                ⏱️ {task.estimatedMinutes} min
-                              </span>
-                            )}
-                            {task.source === 'email' && (
-                              <span className="today-task-source">
-                                📧 {task.sourceData?.emailFrom ? `From ${task.sourceData.emailFrom.split('<')[0].trim() || task.sourceData.emailFrom}` : 'From email'}
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleCompleteTask(task.id)}
-                            className="complete-task-button-small"
-                          >
-                            ✓ Complete
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {todayTasks.length > 5 && (
-                    <p className="more-tasks-info">
-                      +{todayTasks.length - 5} more tasks today. <button onClick={() => navigate('/tasks')} className="link-button">View all</button>
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="no-data-section">
-                  <p className="no-data">No tasks for today</p>
-                  <button 
-                    onClick={() => navigate('/tasks')} 
-                    className="go-to-tasks-button"
-                  >
-                    Add Tasks
-                  </button>
-                </div>
-              )}
-            </section>
-
-            {/* Summary Stats Section */}
-            <section className="dashboard-section">
-              <h2>Summary</h2>
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-value">{taskStats?.totalTasks || 0}</div>
-                  <div className="stat-label">Total Tasks</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">{todayTasks.length}</div>
-                  <div className="stat-label">Today's Tasks</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value overdue-stat">{taskStats?.overdueTasks || 0}</div>
-                  <div className="stat-label">Overdue</div>
-                </div>
-                <div className="stat-card highlight-stat">
-                  <div className="stat-value">{user?.completedTasksCount || 0}</div>
-                  <div className="stat-label">Completed</div>
-                </div>
+            ) : (
+              <div className="no-tasks-message">
+                <p>No tasks for today</p>
               </div>
-            </section>
-          </>
-        )}
-      </main>
+            )}
+
+            {/* Bottom Navigation */}
+            <div className="bottom-navigation">
+              <div className="nav-icon"></div>
+              <div className="nav-icon"></div>
+              <div className="nav-icon"></div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
