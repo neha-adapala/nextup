@@ -62,10 +62,10 @@ export async function findFreeTimeSlots(accessToken, startDate = new Date(), end
 
     while (currentDate <= endDate) {
       const dayStart = new Date(currentDate);
-      dayStart.setHours(8, 0, 0, 0); // Start checking from 8 AM
+      dayStart.setHours(0, 0, 0, 0); // Start checking from 8 AM
       
       const dayEnd = new Date(currentDate);
-      dayEnd.setHours(22, 0, 0, 0); // End checking at 10 PM
+      dayEnd.setHours(24, 0, 0, 0); // End checking at 10 PM
 
       // Get events for this day
       const dayEvents = events.filter(event => {
