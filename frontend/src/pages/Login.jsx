@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import logoImage from '../logo.png';
 import './Login.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
@@ -46,15 +47,14 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <div className="logo-image"><img src={'./images/logo.png'}/></div>
+          <div className="logo-image">
+            <img src={logoImage} alt="NextUp Logo" />
+          </div>
           <h1 className="app-title">NextUp</h1>
           <p className="app-subtitle">Make the most of your free time</p>
         </div>
 
         <div className="login-content">
-          <p className="login-description">
-            Sign in with your account to access your calendar and emails
-          </p>
 
           {error && (
             <div className="error-message" role="alert">
@@ -68,6 +68,7 @@ function Login() {
               onClick={handleGoogleLogin}
               disabled={isLoading}
             >
+              
               {isLoading ? (
                 <span className="button-loading">Signing in...</span>
               ) : (
@@ -94,6 +95,9 @@ function Login() {
                 </>
               )}
             </button>
+            <p className="login-description">
+            Sign in with your account to access your calendar and emails
+          </p>
 
             {availableProviders.microsoft && (
               <button
