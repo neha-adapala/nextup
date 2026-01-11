@@ -48,12 +48,10 @@ export async function fetchCalendarEvents(accessToken, startDate = new Date(), e
  */
 export async function findFreeTimeSlots(accessToken, startDate = new Date(), endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), minDurationMinutes = 10) {
   try {
-    startDate.setHours(0, 0, 0, 0);
     const events = await fetchCalendarEvents(accessToken, startDate, endDate);
     
     // Sort events by start time
     events.sort((a, b) => a.start.getTime() - b.start.getTime());
-
 
     const freeTimeSlots = [];
     const minDurationMs = minDurationMinutes * 60 * 1000;
@@ -76,7 +74,7 @@ export async function findFreeTimeSlots(accessToken, startDate = new Date(), end
       });
 
       // Find gaps between events
-      let lastEventEnd = dayStart;
+      let lastEventEnd = currentDate;
 
       dayEvents.forEach(event => {
         const eventStart = new Date(event.start);
@@ -119,7 +117,7 @@ export async function findFreeTimeSlots(accessToken, startDate = new Date(), end
     // Filter out past slots
     const now = new Date();
     return freeTimeSlots
-      //.filter(slot => slot.end > now)
+      .filter(slot => slot.end > now)
       .sort((a, b) => a.start.getTime() - b.start.getTime())
       .slice(0, 20); // Limit to 20 slots
   } catch (error) {
@@ -141,14 +139,8 @@ export async function getNextBreak(accessToken) {
       return null;
     }
 
-    let i=0;
-    let nextSlot = freeSlots[i];
-
-    while(nextSlot.end < new Date()) {
-      i++;
-      nextSlot = freeSlots[i];
-    }
-
+    const nextSlot = freeSlots[0];
+    console.log(freeSlots);
     const now = new Date();
 
     // Check if this break is starting soon (within 5 minutes) or already started

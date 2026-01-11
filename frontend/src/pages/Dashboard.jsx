@@ -151,7 +151,6 @@ function Dashboard() {
 
   const todayTasks = getTodayTasks();
   const [productivityTimeRemaining, setProductivityTimeRemaining] = useState(null);
-  const [timeToStartRemaining, setTimeToStartRemaining] = useState(null);
 
   // Calculate productivity period countdown (time until next break)
   useEffect(() => {
@@ -163,17 +162,14 @@ function Dashboard() {
 
     const updateTimer = () => {
       const now = new Date();
-      const breakEnd = new Date(calendarData.nextBreak.end);
-      const remaining = Math.max(0, Math.floor((breakEnd.getTime() - now.getTime()) / 1000));
-      setProductivityTimeRemaining(remaining);
-    };
-
-    const updateTimeToStartTimer = () => {
-      const now = new Date();
       const breakStart = new Date(calendarData.nextBreak.start);
+      console.log("calendarData: ", calendarData);
+      console.log("calendarData.nextBreak.start: ", calendarData.nextBreak.start);
       const remaining = Math.max(0, Math.floor((breakStart.getTime() - now.getTime()) / 1000));
-      setTimeToStartRemaining(remaining);
+      setProductivityTimeRemaining(remaining);
+      console.log("breakStart: ", breakStart);
     };
+    
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
@@ -220,17 +216,17 @@ function Dashboard() {
     };
   };
 
-  const isTimerAtZero = productivityTimeRemaining !== null && timeToStartRemaining > 0;
+  const isTimerAtZero = productivityTimeRemaining !== null && productivityTimeRemaining <= 0;
   
   // Get next period info - if timer is at zero, show next break, otherwise calculate from current break end
   const getNextPeriodInfo = () => {
     if (calendarData?.hasBreak && calendarData.nextBreak.start) {
       // If we're in a break, the next period starts when this break ends
       if (isTimerAtZero && calendarData.nextBreak.end) {
-        return formatNextPeriodDate(calendarData.nextBreak.start);
+        return formatNextPeriodDate(calendarData.nextBreak.end);
       }
       // Otherwise, show when the next break starts (which is when current period ends)
-      return formatNextPeriodDate(calendarData.nextBreak.end);
+      return formatNextPeriodDate(calendarData.nextBreak.start);
     }
     // Fallback to default
     return formatNextPeriodDate(null);
@@ -257,7 +253,7 @@ function Dashboard() {
       {!loading && !error && (
         <>
           {/* Productivity Timer Section */}
-          {isTimerAtZero ? ( <>
+          {!isTimerAtZero ? ( <>
             <div className="productivity-timer-section-event">
             <p className="productivity-timer-label productivity-timer-label-dark">YOUR NEXT PRODUCTIVITY PERIOD IS AT:</p>
                 <div className="productivity-period-display">
@@ -275,7 +271,7 @@ function Dashboard() {
           </>)}
 
           {/* Current Tasks Section */}
-          {isTimerAtZero ? ( <>
+          {!isTimerAtZero ? ( <>
             <div className="current-tasks-section-event">
             <h2 className="current-tasks-header-event">UPCOMING TASKS</h2>
             
@@ -333,7 +329,7 @@ function Dashboard() {
 
 
           {/* Bottom Navigation */}
-          {isTimerAtZero ? ( <>
+          {!isTimerAtZero ? ( <>
             <div className="bottom-navigation-event">
               <div className="nav-icon"></div>
               <div className="nav-icon"></div>
