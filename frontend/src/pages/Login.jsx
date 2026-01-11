@@ -46,6 +46,7 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
+          <div className="logo-image"><img src={'./images/logo.png'}/></div>
           <h1 className="app-title">NextUp</h1>
           <p className="app-subtitle">Make the most of your free time</p>
         </div>
