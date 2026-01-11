@@ -20,27 +20,7 @@ function Dashboard() {
 
   useEffect(() => {
     if (user) {
-      fetchData();
-      
-      // Check for break reminders every 30 seconds (F-005)
-      const breakCheckInterval = setInterval(async () => {
-        try {
-          const token = localStorage.getItem('token');
-          const headers = { Authorization: `Bearer ${token}` };
-          
-          const response = await axios.get(`${API_URL}/api/calendar/break-reminder`, { headers });
-          
-          // If break is starting/has started, navigate to reminder screen
-          if (response.data.success && response.data.hasBreak && response.data.isBreakTime) {
-            navigate('/break-reminder');
-          }
-        } catch (error) {
-          console.error('Error checking for break:', error);
-          // Don't show error to user, just log it
-        }
-      }, 30000); // Check every 30 seconds
-
-      return () => clearInterval(breakCheckInterval);
+      fetchData();     
     }
   }, [user, navigate]);
 
@@ -301,7 +281,6 @@ function Dashboard() {
                   <div key={task.id} className="current-task-card-event">
                     <div className="task-card-header-event">
                       <div className="task-duration-badge-event">
-                        <span className="clock-icon">🕐</span>
                         <span>{task.estimatedMinutes || 15} min</span>
                       </div>
                       {task.dueDate && (
@@ -309,7 +288,7 @@ function Dashboard() {
                       )}
                     </div>
                     <h3 className="task-title">{task.name || 'Task main descriptor'}</h3>
-                    <p className="task-description">{task.sourceData.emailFrom || 'Lorem ipsum description stuff'}</p>
+                    <p className="task-description" style={{color: '#424147'}}>{task.sourceData.emailFrom || 'Lorem ipsum description stuff'}</p>
                   </div>
                 ))}
               </div>
@@ -329,7 +308,6 @@ function Dashboard() {
                   <div key={task.id} className="current-task-card-pp">
                     <div className="task-card-header-pp">
                       <div className="task-duration-badge-pp">
-                        <span className="clock-icon">🕐</span>
                         <span>{task.estimatedMinutes || 15} min</span>
                       </div>
                       {task.dueDate && (
@@ -337,7 +315,7 @@ function Dashboard() {
                       )}
                     </div>
                     <h3 className="task-title">{task.name || 'Task main descriptor'}</h3>
-                    <p className="task-description">{task.sourceData.emailFrom || 'Lorem ipsum description stuff'}</p>
+                    <p className="task-description" style={{color: '#424147'}}>{task.sourceData.emailFrom || 'Lorem ipsum description stuff'}</p>
                   </div>
                 ))}
               </div>
