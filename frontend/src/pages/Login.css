@@ -20,6 +20,16 @@
   margin-bottom: 40px;
 }
 
+.logo-image {
+  background-image: url('/images/logo.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 160px;
+  height: 80px;
+  margin: 0 auto 16px;
+}
+
 .app-title {
   font-size: 32px;
   font-weight: 700;
