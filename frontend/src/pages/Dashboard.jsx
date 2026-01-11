@@ -326,10 +326,6 @@ function Dashboard() {
 
       {!loading && !error && (
         <>
-          {/* Logout Button */}
-          <button onClick={handleLogout} className="logout-button">
-            Logout
-          </button>
 
           {/* Productivity Timer Section */}
           {isTimerAtZero ? ( <>
@@ -413,15 +409,17 @@ function Dashboard() {
           {/* Bottom Navigation */}
           {isTimerAtZero ? ( <>
             <div className="bottom-navigation-event">
-              <div className="nav-icon"></div>
-              <div className="nav-icon"></div>
-              <div className="nav-icon"></div>
+              {/* Logout Button */}
+          <button onClick={handleLogout} className="logout-button">
+            Logout
+          </button>
             </div>
           </>) : ( <>
             <div className="bottom-navigation-pp">
-              <div className="nav-icon"></div>
-              <div className="nav-icon"></div>
-              <div className="nav-icon"></div>
+              {/* Logout Button */}
+          <button onClick={handleLogout} className="logout-button">
+            Logout
+          </button>
             </div>
           </>)}
           

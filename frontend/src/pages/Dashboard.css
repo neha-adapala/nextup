@@ -292,14 +292,11 @@
 }
 
 .logout-button {
-  position:absolute;
-  top: 16px;
-  left: 16px;
-  padding: 6px 13px;
-  color: #ff6b35;
-  background: #f5f1e8;
+  padding: 8px 15px;
+  color: #f5f1e8;
+  background: rgb(255, 145, 105);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -308,7 +305,6 @@
 
 .logout-button:hover {
   background: #ff6b35;
-  border-color: #f5f1e8;
   transform: translateY(-1px);
 }
 
