@@ -1,13 +1,14 @@
+
 .dashboard-container {
   min-height: 100vh;
-  background: #f5f1e8;
+  background: #fff6f3;
   padding: 0;
   max-width: 100%;
   margin: 0;
   display: flex;
   flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto Condensed', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Bebas Neue'
     sans-serif;
 }
 
@@ -15,11 +16,14 @@
 .productivity-timer-section {
   text-align: center;
   padding: 32px 24px 24px 24px;
-  background: #f5f1e8;
+  background: 
+#fff6f3;
 }
 
 .productivity-timer-label {
-  font-size: 14px;
+  font-family: 'Roboto-Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 25px;
   font-weight: 500;
   margin: 0 0 16px 0;
   text-transform: uppercase;
@@ -27,7 +31,7 @@
 }
 
 .productivity-timer-label-orange {
-  color: #ff6b35;
+  color: #fe663d;
 }
 
 .productivity-timer-label-dark {
@@ -37,7 +41,7 @@
 .productivity-timer-display {
   font-size: 64px;
   font-weight: 700;
-  color: #ff6b35;
+  color: #ff4d1e;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -59,7 +63,7 @@
 
 /* Current Tasks Section */
 .current-tasks-section {
-  background: #ff6b35;
+  background: #ff704b;
   border-radius: 24px 24px 0 0;
   padding: 24px;
   flex: 1;
@@ -69,7 +73,8 @@
 }
 
 .current-tasks-header {
-  font-size: 24px;
+  
+  font-size: 26px;
   font-weight: 600;
   color: white;
   margin: 0 0 24px 0;
@@ -107,7 +112,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #ff6b35;
+  background: #ff653d
+ ;
   color: white;
   padding: 6px 12px;
   border-radius: 20px;
